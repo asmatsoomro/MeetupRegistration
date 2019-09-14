@@ -58,6 +58,40 @@ public class PatRegistrationTests {
                 .andExpect(ok);
     }
 
+    @Test(expected = Exception.class)
+    public void test_addNewMemberInvalidValues() throws Exception {
+
+        ResultMatcher ok = MockMvcResultMatchers.status()
+                .is2xxSuccessful();
+
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/register")
+                .param("name", "")
+                .param("password", "")
+                .param("address", "Test")
+                .param("email", "test@gmx.de")
+                .param("phone", "0179855444");;
+
+        this.mockMvc.perform(builder);
+
+    }
+
+    @Test(expected = Exception.class)
+    public void test_addNewMember_InvalidName() throws Exception {
+
+        ResultMatcher ok = MockMvcResultMatchers.status()
+                .is2xxSuccessful();
+
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/register")
+                .param("name", "Test12345")
+                .param("password", "")
+                .param("address", "Test")
+                .param("email", "test@gmx.de")
+                .param("phone", "0179855444");;
+
+        this.mockMvc.perform(builder);
+
+    }
+
     @After
     public void clearMemberCache(){
         registrationResource.removeAllMembers();

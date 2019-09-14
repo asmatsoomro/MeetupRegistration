@@ -12,13 +12,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.POST;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Pattern;
 
 @RestController
 public class RegistrationController {
@@ -44,7 +44,8 @@ public class RegistrationController {
 
     @RequestMapping(value = {"/register", "/Register"}, method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public String addNewMember(Model model, POST post, HttpServletRequest servletRequest) {
+    @ExceptionHandler(IllegalArgumentException.class)
+    public String addNewMember(Model model, POST post, HttpServletRequest servletRequest) throws IllegalArgumentException {
 
         LOGGER.info("Adding a new member to the repository");
         String name = servletRequest.getParameter("name");
@@ -52,14 +53,10 @@ public class RegistrationController {
         String address = servletRequest.getParameter("address");
         String email = servletRequest.getParameter("email");
         String phone = servletRequest.getParameter("phone");
-        if (servletRequest == null || StringUtils.isEmpty(name) || StringUtils.isEmpty(password)
+        if (servletRequest == null || isNameInvalid(name) || StringUtils.isEmpty(password)
                 || StringUtils.isEmpty(address) || StringUtils.isEmpty(email) || StringUtils.isEmpty(phone)) {
-            Template template = velocityEngine.getTemplate("templates/registrationFailure.vm");
-            VelocityContext context = new VelocityContext();
-            StringWriter writer = new StringWriter();
-            template.merge(context, writer);
 
-            return writer.toString();
+            throw new IllegalArgumentException("One or more input values are invalid");
         }
 
         Person person = new Person();
@@ -68,8 +65,6 @@ public class RegistrationController {
         person.setEmail(servletRequest.getParameter("email"));
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         String hashedPassword = passwordEncoder.encode(servletRequest.getParameter("password"));
-
-
 
         person.setPassword(hashedPassword);
         person.setPhone(servletRequest.getParameter("phone"));
@@ -84,6 +79,10 @@ public class RegistrationController {
         return writer.toString();
     }
 
+    private boolean isNameInvalid(String name) {
+        return StringUtils.isEmpty(name) || Pattern.compile("[0-9]").matcher(name).find();
+    }
+
     @RequestMapping(value = {"/person", "/Person"}, method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity getAllMembers()
@@ -93,4 +92,6 @@ public class RegistrationController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(memberList);
 
     }
+
+
 }
