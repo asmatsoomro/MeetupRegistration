@@ -22,7 +22,6 @@ public class RegistrationResource {
     // for better handling later on.
     public Response save(Person person) {
 
-        System.out.println(person.getAddress() + person.getName());
         registrationRepository.save(person);
 
         return Response.ok().build();
