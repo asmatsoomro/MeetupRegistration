@@ -17,7 +17,7 @@ You must have java 8 installed in your machine
 
 ### Installing
 If you want to run with maven, please run mvn clean install and then in project home run
-java -jar target/demo-0.0.1-SNAPSHOT.jar
+java -jar target/meetup-registration-0.0.1-SNAPSHOT.jar
 
 
 
