@@ -2,16 +2,14 @@ package pat.registration;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Response;
 import java.util.List;
 
 
-@Path("/registration")
-@Component
-public class RegistrationResource {
+
+@Service
+public class RegistrationService {
 
     @Autowired
     RegistrationRepository registrationRepository;
@@ -20,11 +18,9 @@ public class RegistrationResource {
     // Return a success information to the user including the entered information.
     // In case of the address split the information into a better format/structure
     // for better handling later on.
-    public Response save(Person person) {
+    public Person save(Person person) {
 
-        registrationRepository.save(person);
-
-        return Response.ok().build();
+        return registrationRepository.save(person);
     }
 
     public List<Person> getAllMembers() {

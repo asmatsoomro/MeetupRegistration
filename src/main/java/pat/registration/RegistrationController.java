@@ -3,17 +3,16 @@ package pat.registration;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.POST;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.List;
@@ -27,7 +26,7 @@ public class RegistrationController {
     private VelocityEngine velocityEngine;
 
     @Autowired
-    private RegistrationResource registrationResource;
+    private RegistrationService registrationService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RegistrationController.class);
 
@@ -45,7 +44,7 @@ public class RegistrationController {
     @RequestMapping(value = {"/register", "/Register"}, method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.ACCEPTED)
     @ExceptionHandler(IllegalArgumentException.class)
-    public String addNewMember(Model model, POST post, HttpServletRequest servletRequest) throws IllegalArgumentException {
+    public String addNewMember(HttpServletRequest servletRequest) throws IllegalArgumentException {
 
         LOGGER.info("Adding a new member to the repository");
         String name = servletRequest.getParameter("name");
@@ -53,8 +52,8 @@ public class RegistrationController {
         String address = servletRequest.getParameter("address");
         String email = servletRequest.getParameter("email");
         String phone = servletRequest.getParameter("phone");
-        if (servletRequest == null || isNameInvalid(name) || StringUtils.isEmpty(password)
-                || StringUtils.isEmpty(address) || StringUtils.isEmpty(email) || StringUtils.isEmpty(phone)) {
+        if (isNameInvalid(name) || StringUtils.isEmpty(password)
+                || StringUtils.isEmpty(address) || isEmailAddressInValid(email) || isPhoneNumberInvalid(phone)) {
 
             throw new IllegalArgumentException("One or more input values are invalid");
         }
@@ -63,13 +62,13 @@ public class RegistrationController {
         person.setName(servletRequest.getParameter("name"));
         person.setAddress(servletRequest.getParameter("address"));
         person.setEmail(servletRequest.getParameter("email"));
-        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        String hashedPassword = passwordEncoder.encode(servletRequest.getParameter("password"));
+
+        String hashedPassword = BCrypt.hashpw(password, BCrypt.gensalt());
 
         person.setPassword(hashedPassword);
         person.setPhone(servletRequest.getParameter("phone"));
 
-        registrationResource.save(person);
+        registrationService.save(person);
 
         Template template = velocityEngine.getTemplate("templates/registrationSuccessful.vm");
         VelocityContext context = new VelocityContext();
@@ -83,12 +82,25 @@ public class RegistrationController {
         return StringUtils.isEmpty(name) || Pattern.compile("[0-9]").matcher(name).find();
     }
 
+    private boolean isEmailAddressInValid(String email){
+        String regex = "^(.+)@(.+)$";
+
+        Pattern pattern = Pattern.compile(regex);
+        return StringUtils.isEmpty(email) || !pattern.matcher(email).find();
+    }
+
+    private boolean isPhoneNumberInvalid(String number) {
+        String regex = "^\\+(?:[0-9] ?){6,14}[0-9]$";
+        Pattern pattern = Pattern.compile(regex);
+        return StringUtils.isEmpty(number) || !pattern.matcher(number).find();
+    }
+
     @RequestMapping(value = {"/person", "/Person"}, method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity getAllMembers()
             throws IOException, ExecutionException, InterruptedException {
         LOGGER.info("Received a request to get all members");
-        List<Person> memberList = registrationResource.getAllMembers();
+        List<Person> memberList = registrationService.getAllMembers();
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(memberList);
 
     }

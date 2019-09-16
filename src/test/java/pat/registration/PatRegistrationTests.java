@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.util.NestedServletException;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -32,7 +33,7 @@ public class PatRegistrationTests {
     MockMvc mockMvc;
 
     @Autowired
-    RegistrationResource registrationResource;
+    RegistrationService registrationService;
 
     @Before
     public void setup () {
@@ -52,34 +53,28 @@ public class PatRegistrationTests {
                 .param("password", "Test")
                 .param("address", "Test")
                 .param("email", "test@gmx.de")
-                .param("phone", "0179855444");;
+                .param("phone", "+49179855444");;
 
         this.mockMvc.perform(builder)
                 .andExpect(ok);
     }
 
-    @Test(expected = Exception.class)
+    @Test(expected = NestedServletException.class)
     public void test_addNewMemberInvalidValues() throws Exception {
-
-        ResultMatcher ok = MockMvcResultMatchers.status()
-                .is2xxSuccessful();
 
         MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/register")
                 .param("name", "")
                 .param("password", "")
                 .param("address", "Test")
                 .param("email", "test@gmx.de")
-                .param("phone", "0179855444");;
+                .param("phone", "Invalid");;
 
         this.mockMvc.perform(builder);
 
     }
 
-    @Test(expected = Exception.class)
+    @Test(expected = NestedServletException.class)
     public void test_addNewMember_InvalidName() throws Exception {
-
-        ResultMatcher ok = MockMvcResultMatchers.status()
-                .is2xxSuccessful();
 
         MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/register")
                 .param("name", "Test12345")
@@ -92,9 +87,38 @@ public class PatRegistrationTests {
 
     }
 
+    @Test(expected = NestedServletException.class)
+    public void test_addNewMember_InvalidEmail() throws Exception {
+
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/register")
+                .param("name", "Test12345")
+                .param("password", "test")
+                .param("address", "Test")
+                .param("email", "test#de")
+                .param("phone", "0179855444");;
+
+        this.mockMvc.perform(builder);
+
+    }
+
+    @Test(expected = NestedServletException.class)
+    public void test_addNewMember_InvalidPhoneNumber() throws Exception {
+
+        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/register")
+                .param("name", "Test12345")
+                .param("password", "test")
+                .param("address", "Test")
+                .param("email", "test#de")
+                .param("phone", "InvalidPhone");;
+
+        this.mockMvc.perform(builder);
+
+    }
+
+
     @After
     public void clearMemberCache(){
-        registrationResource.removeAllMembers();
+        registrationService.removeAllMembers();
     }
 
 
